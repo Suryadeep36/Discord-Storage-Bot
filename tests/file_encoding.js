@@ -5,7 +5,8 @@ uploadTag.addEventListener('change', async (e)=> {
         const file = uploadTag.files[0];
         const fileName = file.name;
         const fileType = file.type;
-        const chunkedBlobs = createChunks(file, 1);
+        const eachChunkSizeInMb = 1;
+        const chunkedBlobs = createChunks(file, eachChunkSizeInMb);
         const chunkedFiles = createFileFromBlob(chunkedBlobs, fileName);
         let encodedBase64Chunks = await Promise.all(
             chunkedFiles.map(async (file) => {
@@ -13,13 +14,13 @@ uploadTag.addEventListener('change', async (e)=> {
                 return encodedFile;
             })
         );
-        console.log(encodedBase64Chunks); 
         let decodedFiles = [];
         encodedBase64Chunks.map((base64Chunk, i)=> {
             const [fileNameWithOutExtension, extension] = fileName.split('.');
             decodedFiles.push(decodeFile(base64Chunk, fileNameWithOutExtension + "-" + i + extension, fileType));
         })
-        console.log(decodedFiles);
+        const mergedFile = mergeChunksIntoOneFile(decodedFiles, fileName);
+        console.log(mergedFile);
     }
     catch(e){
         console.log(e);
@@ -41,7 +42,6 @@ function encodeFile(file){
 }
 
 function decodeFile(base64Data, fileName, mimeType) {
-    console.log(fileName);
     const base64String = base64Data.split(',')[1];
     const byteCharacters = atob(base64String);
     const byteNumbers = new Array(byteCharacters.length).fill(0).map((_, i) => byteCharacters.charCodeAt(i));
@@ -71,4 +71,15 @@ function createFileFromBlob(chunkedBlobs, filename){
         chunkedFiles.push(new File([e], filenameWithOutExtension + "-" + i + "." + extension));
     })
     return chunkedFiles;
+}
+
+
+function mergeChunksIntoOneFile(decodedFiles, filename){
+    const mergedBlob = new Blob(decodedFiles.map(chunk => chunk), {
+        type: decodedFiles[0].type
+    });
+    const mergedFile = new File([mergedBlob], filename, {
+        type: decodedFiles[0].type
+    })
+    return mergedFile;
 }
