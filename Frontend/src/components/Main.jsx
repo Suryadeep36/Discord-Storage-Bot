@@ -1,26 +1,38 @@
 "use client";
 import { PaperClipIcon } from "@heroicons/react/20/solid";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import createChunks from "../../public/js/createChunks.js";
 import createFileFromBlob from "../../public/js/createFileFromBlob.js";
 import encodeFile from "../../public/js/encodeFile.js";
+import FileView from "./FileView.jsx";
+
 export default function Main() {
   const [file, setFile] = useState("");
+  const [allFiles, setAllFiles] = useState([]);
+  useEffect(() => {
+    fetch("http://localhost:3000/getAllFiles")
+      .then((res) => {
+        return res.json();
+      })
+      .then((data) => {
+        setAllFiles(data.data);
+      });
+  },[]);
   async function handleClick() {
     console.log(file);
     const fileName = file.name;
-    const fileType = file.type;
     const eachChunkSizeInMb = 2;
     const chunkedBlobs = createChunks(file, eachChunkSizeInMb);
     console.log(chunkedBlobs);
     const chunkedFiles = createFileFromBlob(chunkedBlobs, fileName);
     console.log(chunkedFiles);
     let i = 0;
-    for(i = 0; i < chunkedFiles.length; i++){
+    for (i = 0; i < chunkedFiles.length; i++) {
       const encodedFile = await encodeFile(chunkedFiles[i]);
       console.log(i);
       const payload = {
         fileName: file.name,
+        fileType: file.type,
         lastModifiedDate: file.lastModifiedDate,
         fileSize: file.size,
         data: encodedFile,
@@ -41,11 +53,12 @@ export default function Main() {
         console.error(`Error uploading chunk ${i + 1}:`, error);
       }
     }
-    if(i == chunkedFiles.length){
-      await fetch("http://localhost:3000/processFile")
-      alert("File stored!!")
-    } 
-    else{
+    if (i == chunkedFiles.length) {
+      const res = await fetch("http://localhost:3000/processFile");
+      res.json().then((data) => {
+        alert(data.msg);
+      });
+    } else {
       alert("some error occured while uploading the file try again");
     }
   }
@@ -85,34 +98,9 @@ export default function Main() {
               role="list"
               className="divide-y divide-gray-100 rounded-md border border-gray-200"
             >
-              <li className="flex items-center justify-between py-4 pl-4 pr-5 text-sm sm:text-base">
-                <div className="flex w-0 flex-1 items-center">
-                  <PaperClipIcon
-                    aria-hidden="true"
-                    className="size-5 shrink-0 text-gray-400"
-                  />
-                  <div className="ml-4 flex min-w-0 flex-1 gap-2">
-                    <span className="truncate font-medium text-gray-300">
-                      resume_back_end_developer.pdf
-                    </span>
-                    <span className="shrink-0 text-gray-400">2.4mb</span>
-                  </div>
-                </div>
-                <div className="ml-4 shrink-0">
-                  <a
-                    href="#"
-                    className="font-medium text-indigo-600 hover:text-indigo-500 mx-5 lg:mx-9"
-                  >
-                    Download
-                  </a>
-                  <a
-                    href="#"
-                    className="font-medium text-red-600 hover:text-red-500"
-                  >
-                    Delete
-                  </a>
-                </div>
-              </li>
+              {allFiles.map((ele, i) => {
+                return <FileView fileName={ele.fileName} fileSize={ele.fileSize} key={i} />
+              })}
             </ul>
           </dd>
         </div>
