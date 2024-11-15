@@ -1,6 +1,54 @@
+"use client";
 import { PaperClipIcon } from "@heroicons/react/20/solid";
-
+import { useState } from "react";
+import createChunks from "../../public/js/createChunks.js";
+import createFileFromBlob from "../../public/js/createFileFromBlob.js";
+import encodeFile from "../../public/js/encodeFile.js";
 export default function Main() {
+  const [file, setFile] = useState("");
+  async function handleClick() {
+    console.log(file);
+    const fileName = file.name;
+    const fileType = file.type;
+    const eachChunkSizeInMb = 2;
+    const chunkedBlobs = createChunks(file, eachChunkSizeInMb);
+    console.log(chunkedBlobs);
+    const chunkedFiles = createFileFromBlob(chunkedBlobs, fileName);
+    console.log(chunkedFiles);
+    let i = 0;
+    for(i = 0; i < chunkedFiles.length; i++){
+      const encodedFile = await encodeFile(chunkedFiles[i]);
+      console.log(i);
+      const payload = {
+        fileName: file.name,
+        lastModifiedDate: file.lastModifiedDate,
+        fileSize: file.size,
+        data: encodedFile,
+      };
+      try {
+        const resp = await fetch("http://localhost:3000/uploadFile", {
+          method: "POST",
+          body: JSON.stringify(payload),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        if (!resp.ok) {
+          throw new Error(`Failed to upload chunk ${i + 1}`);
+        }
+        console.log(`Chunk ${i + 1} uploaded successfully`);
+      } catch (error) {
+        console.error(`Error uploading chunk ${i + 1}:`, error);
+      }
+    }
+    if(i == chunkedFiles.length){
+      await fetch("http://localhost:3000/processFile")
+      alert("File stored!!")
+    } 
+    else{
+      alert("some error occured while uploading the file try again");
+    }
+  }
   return (
     <>
       <div className="flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8">
@@ -14,11 +62,15 @@ export default function Main() {
             type="file"
             id="file"
             name="file"
+            onChange={(e) => {
+              setFile(e.target.files[0]);
+            }}
           />
           <button
             type="button"
             className="focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm sm:text-base px-5 py-2.5 sm:ml-2 mt-2 sm:mt-0 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800"
             name="upload"
+            onClick={handleClick}
           >
             Upload the file
           </button>
@@ -61,7 +113,6 @@ export default function Main() {
                   </a>
                 </div>
               </li>
-              
             </ul>
           </dd>
         </div>

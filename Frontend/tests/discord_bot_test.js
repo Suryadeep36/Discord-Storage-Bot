@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Client, GatewayIntentBits } from "discord.js";
+import { Client, GatewayIntentBits, AttachmentBuilder } from "discord.js";
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -8,11 +8,10 @@ const client = new Client({
   ],
 });
 
-client.on("ready", () => {
-  console.log(client);
+client.on("ready", async () => {
   console.log(`Logged in as ${client.user.tag}`);
   const channel = client.channels.cache.get(process.env.DISCORD_CHANNEL_ID);
-  sendMessage(channel, "Hello World");
+  await channel.send("hello");
 });
 
 client.on("messageCreate", async (msg) => {
