@@ -4,6 +4,7 @@ import cors from "cors";
 import fs from "fs";
 import sendFile from "./sendMsg.js";
 import getAttechmentUrlByMessageId from "./getAttechmentUrlByMessageId.js";
+import deleteMsgById from "./deleteMsgById.js";
 import File from "./model/File.js";
 import mongoose from "mongoose";
 const app = express();
@@ -17,7 +18,10 @@ app.use(cors());
 main().catch((err) => console.log(err));
 
 async function main() {
-  await mongoose.connect("mongodb://127.0.0.1:27017/cloudBin");
+  await mongoose.connect(process.env.DB_URL)
+  .then(() => {
+    console.log("DB Connected!!");
+  })
 }
 let chunks = [];
 app.post("/uploadFile", async (req, res) => {
@@ -100,7 +104,7 @@ app.get("/getAllFiles", async (req, res) => {
 });
 
 app.post("/getAttechmentUrlById", async (req, res) => {
-  const fileName = req.body.messageName;
+  const fileName = req.body.fileName;
   await File.findOne({
     fileName: fileName,
   }).then(async (foundFile) => {
@@ -120,6 +124,23 @@ app.post("/getAttechmentUrlById", async (req, res) => {
     }
   });
 });
+
+app.post("/deleteFile", async (req, res) => {
+  const fileName = req.body.fileName;
+  await File.findOne({
+    fileName: fileName
+  }).then((foundFile) => {
+    if(foundFile){
+      deleteMsgById(foundFile.groupMessageId[req.body.chunkIndex].messageId);
+    }
+  })
+  await File.deleteOne({
+    fileName: fileName
+  })
+  res.send({
+    msg: "Chunk deleted"
+  })
+})
 
 app.listen(port, () => {
   console.log(`Server listening on port: ${port}`);

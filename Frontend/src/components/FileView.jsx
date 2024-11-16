@@ -11,7 +11,7 @@ export default function FileView(props) {
       await fetch("http://localhost:3000/getAttechmentUrlById", {
         method: "POST",
         body: JSON.stringify({
-          messageName: props.fileName,
+          fileName: props.fileName,
           chunkIndex: i
         }),
         headers: {
@@ -43,8 +43,25 @@ export default function FileView(props) {
     a.click();
     URL.revokeObjectURL(fileUrl);
   }
-  function handleDelete() {
+  async function handleDelete() {
     console.log("Please delete " + props.fileName);
+    for(let i = 0; i < props.numberOfChunks; i++){
+      await fetch("http://localhost:3000/deleteFile", {
+        method: "POST",
+        body: JSON.stringify({
+          fileName: props.fileName,
+          chunkIndex: i
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }).then((resp) => {
+        if(!resp.ok){
+          alert("Failed to delete the file");
+        }
+      })
+    }
+    alert(`${props.fileName} deleted!!`);
   }
   return (
     <li className="flex items-center justify-between py-4 pl-4 pr-5 text-sm sm:text-base">

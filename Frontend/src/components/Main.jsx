@@ -21,7 +21,7 @@ export default function Main() {
   async function handleClick() {
     console.log(file);
     const fileName = file.name;
-    const eachChunkSizeInMb = 2;
+    const eachChunkSizeInMb = 20;
     const chunkedBlobs = createChunks(file, eachChunkSizeInMb);
     console.log(chunkedBlobs);
     const chunkedFiles = createFileFromBlob(chunkedBlobs, fileName);
