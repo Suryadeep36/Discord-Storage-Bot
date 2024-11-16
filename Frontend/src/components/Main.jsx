@@ -99,7 +99,7 @@ export default function Main() {
               className="divide-y divide-gray-100 rounded-md border border-gray-200"
             >
               {allFiles.map((ele, i) => {
-                return <FileView fileName={ele.fileName} fileSize={ele.fileSize} key={i} />
+                return <FileView fileName={ele.fileName} fileSize={ele.fileSize} key={i} numberOfChunks={ele.groupMessageId.length} fileType={ele.fileType} />
               })}
             </ul>
           </dd>

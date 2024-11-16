@@ -2,7 +2,8 @@ import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
 import fs from "fs";
-import { sendFile } from "./discord_bot.js";
+import sendFile from "./sendMsg.js";
+import getAttechmentUrlByMessageId from "./getAttechmentUrlByMessageId.js";
 import File from "./model/File.js";
 import mongoose from "mongoose";
 const app = express();
@@ -36,11 +37,14 @@ app.get("/processFile", async (req, res) => {
       chunks = [];
       res.send({
         msg: "File already exists",
-        status: 500
+        status: 500,
       });
     } else {
       for (let i = 0; i < chunks.length; i++) {
-        const fileNameWithOutExtension = chunks[0].fileName.split('.').slice(0, -1).join('.');
+        const fileNameWithOutExtension = chunks[0].fileName
+          .split(".")
+          .slice(0, -1)
+          .join(".");
         let fileName = fileNameWithOutExtension + "-" + i + ".txt";
         fs.appendFile(fileName, chunks[i].data, (err) => {
           if (err) {
@@ -90,12 +94,32 @@ app.get("/processFile", async (req, res) => {
 app.get("/getAllFiles", async (req, res) => {
   await File.find({}).then((allFiles) => {
     res.send({
-      data: allFiles
-    })
-  })
-})
+      data: allFiles,
+    });
+  });
+});
 
-
+app.post("/getAttechmentUrlById", async (req, res) => {
+  const fileName = req.body.messageName;
+  await File.findOne({
+    fileName: fileName,
+  }).then(async (foundFile) => {
+    if (foundFile) {
+      const message = await getAttechmentUrlByMessageId(
+        foundFile.groupMessageId[req.body.chunkIndex].messageId
+      );
+      await fetch(message.url)
+        .then((res) => {
+          return res.text();
+        })
+        .then((data) => {
+          res.send({
+            encodedChunk: data,
+          });
+        });
+    }
+  });
+});
 
 app.listen(port, () => {
   console.log(`Server listening on port: ${port}`);
